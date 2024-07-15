@@ -15,6 +15,8 @@
     "clean": "gatsby clean"
   },
   "dependencies": {
+    "@gorules/jdm-editor": "^1.9.0",
+    "deep-object-diff": "^1.1.9",
     "gatsby": "^5.13.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
