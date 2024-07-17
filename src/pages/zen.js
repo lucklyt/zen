@@ -6,6 +6,8 @@ import axios from 'axios';
 import { Button, Input, Switch, notification,Table,Tooltip,Tag } from 'antd';
 import {diff} from 'deep-object-diff';
 import {ruleContentShort } from './zen.module.css'
+import { format } from 'date-fns';
+
 
 // Assuming CustomNodeSpecification is a function that takes an object defining the custom node
 const addNameListNode =createJdmNode({
@@ -72,7 +74,7 @@ const ZenPage = () => {
         fetchPublishHistory();
     }, []);
     const addTest = () => {
-        setTests([...tests, { request: '{}', expected: '{}', enabled: true }]);
+        setTests([...tests, {desc: '', request: '{}', expected: '{}', enabled: true }]);
         console.log(tests)
     };
 
@@ -138,10 +140,9 @@ const ZenPage = () => {
             const response = await axios.post(url, payload);
             if (response.data.is_succ){
                 notification.success({ message: 'Publish Success' });
-                console.log('success')
+                window.location.reload();
             }else{
-                notification.error({ message: 'Publish Error', description: response.data.data.error_description});
-                console.log('error ',response.data.error_message)
+               throw new Error(response.data.data.error_description);
             }
         } catch (error) {
             console.error('Publish Error:', error);
@@ -163,7 +164,7 @@ const ZenPage = () => {
     };
     const columns = [
         {
-            title: 'Rules',
+            title: '规则',
             dataIndex: 'rules',
             key: 'rules',
             render: text => (
@@ -173,7 +174,7 @@ const ZenPage = () => {
             )
         },
         {
-            title: 'Test Cases',
+            title: '测试用例',
             dataIndex: 'test_cases',
             key: 'test_cases',
             render: text => (
@@ -183,17 +184,18 @@ const ZenPage = () => {
             )
         },
         {
-            title: 'Version',
+            title: '版本',
             dataIndex: 'version',
             key: 'version',
         },
         {
-            title: 'Updated At',
-            dataIndex: 'updated_at',
-            key: 'updated_at',
+            title: '发布时间',
+            dataIndex: 'created_at',
+            key: 'created_at',
+            render: text => format(new Date(text * 1000), 'yyyy-MM-dd HH:mm:ss')
         },
         {
-            title: 'Action',
+            title: '操作',
             key: 'action',
             render: (_, record) => (
                 <div>
@@ -217,6 +219,66 @@ const ZenPage = () => {
         }));
         setTests(formattedTests);
     };
+
+    // Define the columns for the Table
+    const testColumns = [
+        {
+            title: '用例描述',
+            dataIndex: 'description',
+            key: 'desc',
+            render: (text, record, index) => (
+                <Input
+                    value={text}
+                    onChange={(e) => updateTest(index, 'desc', e.target.value)}
+                    placeholder="用例描述"
+                />
+            ),
+        },
+        {
+            title: '预期请求JSON',
+            dataIndex: 'request',
+            key: 'request',
+            render: (text, record, index) => (
+                <Input.TextArea
+                    value={text}
+                    onChange={(e) => updateTest(index, 'request', e.target.value)}
+                    placeholder="预期请求JSON"
+                />
+            ),
+        },
+        {
+            title: '预期输出JSON',
+            dataIndex: 'expected',
+            key: 'expected',
+            render: (text, record, index) => (
+                <Input.TextArea
+                    value={text}
+                    onChange={(e) => updateTest(index, 'expected', e.target.value)}
+                    placeholder="预期输出JSON"
+                />
+            ),
+        },
+        {
+            title: '启用',
+            dataIndex: 'enabled',
+            key: 'enabled',
+            render: (enabled, record, index) => (
+                <Switch checked={enabled} onChange={() => toggleDisable(index)} />
+            ),
+        },
+        {
+            title: '操作',
+            key: 'action',
+            render: (_, record, index) => (
+                <div>
+                    <Button onClick={() => executeTest(index)}>执行</Button>
+                    <Button onClick={() => deleteTest(index)}>删除</Button>
+                </div>
+            ),
+        },
+    ];
+
+
     return  (
         <div style={{paddingBottom: '100px'}}>
             <h1>Auth>异常注册</h1>
@@ -224,23 +286,19 @@ const ZenPage = () => {
             <JdmConfigProvider>
                 <DecisionGraph value={graph} onChange={setGraph} customNodes={[addNameListNode]}/>
             </JdmConfigProvider>
-            <h3> 测试用例 </h3>
-            <div>
-                <Button onClick={addTest}>添加测试</Button>
+            <div style={{marginTop: '20px'}}>
                 <Button onClick={publishData}>发布</Button>
-                {tests.map((test, index) => (
-                    <div key={index} style={{display: 'flex', alignItems: 'center', marginBottom: '10px'}}>
-                        <Input.TextArea value={test.request}
-                                        onChange={(e) => updateTest(index, 'request', e.target.value)}
-                                        placeholder="预期请求JSON"/>
-                        <Input.TextArea value={test.expected}
-                                        onChange={(e) => updateTest(index, 'expected', e.target.value)}
-                                        placeholder="预期输出JSON"/>
-                        <Switch checked={!test.enabled} onChange={() => toggleDisable(index)}/>
-                        <Button onClick={() => executeTest(index)}>执行</Button>
-                        <Button onClick={() => deleteTest(index)}>删除</Button>
-                    </div>
-                ))}
+            </div>
+            <div style={{marginTop: '20px'}}>
+                    <h3>测试用例</h3>
+                    <Button onClick={addTest} style={{marginBottom: 16}}>
+                        添加测试
+                    </Button>
+                    <Table
+                        columns={testColumns}
+                        dataSource={tests.map((test, index) => ({...test, key: index}))}
+                        pagination={false}
+                    />
             </div>
             <h2 style={{marginTop: '20px'}}>发布历史</h2>
             <div>
