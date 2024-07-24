@@ -7,7 +7,7 @@ import { Button, Input, Switch, notification,Table,Tooltip,Tag } from 'antd';
 import {diff} from 'deep-object-diff';
 import {ruleContentShort } from './zen.module.css'
 import { format } from 'date-fns';
-
+import { useLocation } from '@reach/router';
 
 // Assuming CustomNodeSpecification is a function that takes an object defining the custom node
 const addNameListNode =createJdmNode({
@@ -39,13 +39,24 @@ const addNameListNode =createJdmNode({
     ],
 })
 const ZenPage = () => {
+
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const business = queryParams.get('business');
+    const scene = queryParams.get('scene');
+
     const [graph, setGraph] = useState({});
     const [tests, setTests] = useState([]);
     const [version, setVersion] = useState('');
     const fetchRule = async () => {
         try {
-            const effective_rule = await axios.get('http://localhost:9000/internal/api/v1/strategy/rules/effective?business=auth&scene=abnormal_signup');
-            setGraph(effective_rule.data.data.rules);
+            const effective_rule = await axios.get('http://localhost:9000/internal/api/v1/strategy/current-rule',{
+                params:{
+                    business: business,
+                    scene: scene,
+                }
+            });
+            setGraph(effective_rule.data.data.content);
             const formattedTests = effective_rule.data.data.test_cases.map(test => ({
                 request: JSON.stringify(test.request, null, 2),
                 expected: JSON.stringify(test.expected, null, 2),
@@ -64,8 +75,13 @@ const ZenPage = () => {
     useEffect(() => {
         const fetchPublishHistory = async () => {
             try {
-                const response = await axios.get('http://localhost:9000/internal/api/v1/strategy/publish_history?business=auth&scene=abnormal_signup');
-                setPublishHistory(response.data.data.rules);
+                const response = await axios.get('http://localhost:9000/internal/api/v1/strategy/list-rule-history',{
+                    params:{
+                        business: business,
+                        scene: scene,
+                    }
+                });
+                setPublishHistory(response.data.data.records);
             } catch (error) {
                 notification.error({ message: '获取发布历史失败', description: error.toString() });
             }
@@ -100,11 +116,11 @@ const ZenPage = () => {
         const test = tests[index];
         const requestBody = {
             input: JSON.parse(test.request),
-            rules: graph,
+            rule: graph,
             dry_run: true,
         };
         try {
-            const response = await axios.post('http://localhost:9000/internal/api/v1/strategy/evaluate_rules', requestBody);
+            const response = await axios.post('http://localhost:9000/internal/api/v1/strategy/evaluate-rule', requestBody);
             const result = response.data.data;
             console.log(result);
             const expected =JSON.parse(test.expected)
@@ -123,16 +139,16 @@ const ZenPage = () => {
     };
 
     const publishData = async () => {
-        const url = 'http://localhost:9000/internal/api/v1/strategy/publish_rules'; // Replace with your actual endpoint URL
+        const url = 'http://localhost:9000/internal/api/v1/strategy/release-rule'; // Replace with your actual endpoint URL
         const parsedTests = tests.map(test => ({
             ...test,
             request: JSON.parse(test.request),
             expected: JSON.parse(test.expected),
         }));
         const payload = {
-            "business": "auth",
-            "scene": "abnormal_signup",
-            "rules": graph,
+            "business": business,
+            "scene": scene,
+            "rule": graph,
             "test_cases": parsedTests,
         };
 
@@ -151,7 +167,8 @@ const ZenPage = () => {
     };
     const rollback = async (recordVersion) => {
         try {
-            const rsp = await axios.post('http://localhost:9000/internal/api/v1/strategy/rules/rollback', { business:"auth",scene:"abnormal_signup",  version: recordVersion });
+            const rsp = await axios.post('http://localhost:9000/internal/api/v1/strategy/rollback-rule',
+                { business: business,scene: scene,  version: recordVersion });
             if (rsp.data.is_succ) {
                 notification.success({message: 'Rollback successful'});
                 window.location.reload();
