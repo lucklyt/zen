@@ -5,14 +5,13 @@ import '@gorules/jdm-editor/dist/style.css';
 import axios from 'axios';
 import { Button, Input, Switch, notification,Table,Tooltip,Tag } from 'antd';
 import {diff} from 'deep-object-diff';
-import {ruleContentShort } from './zen.module.css'
+import { useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
-import { useLocation } from '@reach/router';
 
 // Assuming CustomNodeSpecification is a function that takes an object defining the custom node
 const addNameListNode =createJdmNode({
     kind: 'add_namelist',
-    group: 'namelist',
+    group: '名单操作',
     displayName: '添加名单数据',
     shortDescription: '添加数据到指定名单',
     inputs: [
@@ -38,8 +37,89 @@ const addNameListNode =createJdmNode({
         },
     ],
 })
-const ZenPage = () => {
 
+const delNameListNode =createJdmNode({
+    kind: 'del_namelist',
+    group: '名单操作',
+    displayName: '删除名单数据',
+    shortDescription: '删除数据到指定名单',
+    inputs: [
+        {
+            control: 'text',
+            name: 'list_name',
+            label: '名单标识',
+        },
+        {
+            control: 'text',
+            name: 'dimension',
+            label: '维度',
+        },
+        {
+            control: 'text',
+            name: 'value',
+            label: '值',
+        },
+    ],
+})
+const incrCounterNode =createJdmNode({
+    kind: 'incr_counter',
+    group: '计数器',
+    displayName: '增加计数',
+    shortDescription: '',
+    inputs: [
+        {
+            control: 'text',
+            name: 'topic',
+            label: '指标',
+        },
+        {
+            control: 'text',
+            name: 'subject',
+            label: '主体',
+        },
+        {
+            control: 'text',
+            name: 'object',
+            label: '客体',
+        },
+        {
+            control: 'text',
+            name: 'ttl',
+            label: '过期时间(0为永久)',
+        },
+    ],
+})
+
+const getCounterNode =createJdmNode({
+    kind: 'get_counter',
+    group: '计数器',
+    displayName: '获取计数',
+    shortDescription: '',
+    inputs: [
+        {
+            control: 'text',
+            name: 'topic',
+            label: '指标',
+        },
+        {
+            control: 'text',
+            name: 'subject',
+            label: '主体',
+        },
+        {
+            control: 'text',
+            name: 'object',
+            label: '客体',
+        },
+        {
+            control: 'text',
+            name: 'period',
+            label: '周期',
+        },
+    ],
+})
+
+function ZenPage()  {
     const location = useLocation();
     const queryParams = new URLSearchParams(location.search);
     const business = queryParams.get('business');
@@ -186,7 +266,7 @@ const ZenPage = () => {
             key: 'rules',
             render: text => (
                 <Tooltip title={JSON.stringify(text, null, 2)}>
-                    <div className={ruleContentShort}>{JSON.stringify(text, null, 2)}</div>
+                    <div className="ruleContentShort">{JSON.stringify(text, null, 2)}</div>
                 </Tooltip>
             )
         },
@@ -196,7 +276,7 @@ const ZenPage = () => {
             key: 'test_cases',
             render: text => (
                 <Tooltip title={JSON.stringify(text, null, 2)}>
-                    <div className={ruleContentShort}>{JSON.stringify(text, null, 2)}</div>
+                    <div className="ruleContentShort">{JSON.stringify(text, null, 2)}</div>
                 </Tooltip>
             )
         },
@@ -297,31 +377,34 @@ const ZenPage = () => {
 
 
     return  (
-        <div style={{paddingBottom: '100px'}}>
-            <h1>Auth>异常注册</h1>
-            <h2> 规则编辑 </h2>
-            <JdmConfigProvider>
-                <DecisionGraph value={graph} onChange={setGraph} customNodes={[addNameListNode]}/>
-            </JdmConfigProvider>
-            <div style={{marginTop: '20px'}}>
-                <Button onClick={publishData}>发布</Button>
+        <>
+            <div style={{paddingBottom: '100px'}}>
+                <h1>Auth:异常注册</h1>
+                <h2> 规则编辑 </h2>
+                <JdmConfigProvider>
+                    <DecisionGraph value={graph} onChange={setGraph} customNodes={[addNameListNode,delNameListNode,
+                    incrCounterNode,getCounterNode]}/>
+                </JdmConfigProvider>
+                <div style={{marginTop: '20px'}}>
+                    <Button onClick={publishData}>发布</Button>
+                </div>
+                <div style={{marginTop: '20px'}}>
+                        <h3>测试用例</h3>
+                        <Button onClick={addTest} style={{marginBottom: 16}}>
+                            添加测试
+                        </Button>
+                        <Table
+                            columns={testColumns}
+                            dataSource={tests.map((test, index) => ({...test, key: index}))}
+                            pagination={false}
+                        />
+                </div>
+                <h2 style={{marginTop: '20px'}}>发布历史</h2>
+                <div>
+                    <Table columns={columns} dataSource={publishHistory} rowKey="version"/>
+                </div>
             </div>
-            <div style={{marginTop: '20px'}}>
-                    <h3>测试用例</h3>
-                    <Button onClick={addTest} style={{marginBottom: 16}}>
-                        添加测试
-                    </Button>
-                    <Table
-                        columns={testColumns}
-                        dataSource={tests.map((test, index) => ({...test, key: index}))}
-                        pagination={false}
-                    />
-            </div>
-            <h2 style={{marginTop: '20px'}}>发布历史</h2>
-            <div>
-                <Table columns={columns} dataSource={publishHistory} rowKey="version"/>
-            </div>
-        </div>
+        </>
     )
 }
 export default ZenPage

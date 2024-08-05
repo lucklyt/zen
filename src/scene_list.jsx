@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Table, Button, notification, Modal, Form, Input } from 'antd';
 import axios from 'axios';
 
-const SceneList = () => {
+function SceneList() {
     const [scenes, setScenes] = useState([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [form] = Form.useForm();
