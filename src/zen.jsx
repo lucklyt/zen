@@ -85,7 +85,7 @@ const incrCounterNode =createJdmNode({
         {
             control: 'text',
             name: 'ttl',
-            label: '过期时间(0为永久)',
+            label: '有效期[eg: 15s, 3m, 1h]',
         },
     ],
 })
@@ -114,7 +114,7 @@ const getCounterNode =createJdmNode({
         {
             control: 'text',
             name: 'period',
-            label: '周期',
+            label: '时间段[eg: 15s, 3m, 1h]',
         },
     ],
 })
